@@ -31,5 +31,6 @@ jobs:
                - Un diagnóstico general del problema planteado.
                - Los archivos del repositorio que probablemente estén involucrados (el proyecto es un Tetris en JS vanilla con `index.html`, `style.css` y `game.js`).
                - Pasos sugeridos para implementar la solución.
+               El comentario debe estar escrito en formato Markdown válido y bien interpretable por GitHub (encabezados, listas, bloques de código con \`\`\` cuando corresponda, etc.).
             Usa `gh issue comment ${{ github.event.issue.number }} --body "..."` para publicar el comentario.
           claude_args: '--allowed-tools "Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh issue view:*),Bash(gh label list:*)"'
