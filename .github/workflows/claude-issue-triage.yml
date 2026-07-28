@@ -1,0 +1,35 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Issue Triage
+        id: claude-triage
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Analiza el issue #${{ github.event.issue.number }} de este repositorio (título y cuerpo).
+
+            1. Clasifícalo asignando ÚNICAMENTE etiquetas que ya existan en el repo (por ejemplo: bug, enhancement, documentation, question, duplicate, help wanted, good first issue, wontfix, invalid). No crees etiquetas nuevas. Usa `gh issue edit ${{ github.event.issue.number }} --add-label "<etiqueta>"` para aplicarlas.
+            2. Publica un comentario en el issue con:
+               - Un diagnóstico general del problema planteado.
+               - Los archivos del repositorio que probablemente estén involucrados (el proyecto es un Tetris en JS vanilla con `index.html`, `style.css` y `game.js`).
+               - Pasos sugeridos para implementar la solución.
+            Usa `gh issue comment ${{ github.event.issue.number }} --body "..."` para publicar el comentario.
+          claude_args: '--allowed-tools "Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh issue view:*),Bash(gh label list:*)"'

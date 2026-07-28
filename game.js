@@ -291,7 +291,7 @@ document.addEventListener('keydown', e => {
     case 'KeyX':
       tryRotate();
       break;
-    case 'Space':
+    case 'Numpad0':
       e.preventDefault();
       hardDrop();
       break;
