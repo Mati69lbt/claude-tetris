@@ -16,6 +16,8 @@ const THEME_COLORS = {
     '#ffb74d', // L - orange
     '#b0bec5', // NUT - metal gray
     '#f06292', // H - pink
+    '#ff5252', // BOMB - red
+    '#fff176', // LIGHTNING - electric yellow
   ],
   light: [
     null,
@@ -28,6 +30,8 @@ const THEME_COLORS = {
     '#fb8c00', // L - orange
     '#607d8b', // NUT - metal gray
     '#d81b60', // H - pink
+    '#d32f2f', // BOMB - red
+    '#f9a825', // LIGHTNING - electric yellow
   ],
 };
 
@@ -51,6 +55,9 @@ const PIECES = [
 ];
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
+const BOMB_TYPE = 10;
+const LIGHTNING_TYPE = 11;
+const POWERUP_THRESHOLD = 3;
 
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
@@ -65,7 +72,7 @@ const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const themeToggleBtn = document.getElementById('theme-toggle');
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, linesSincePowerUp;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -75,6 +82,20 @@ function randomPiece() {
   const type = Math.floor(Math.random() * 9) + 1;
   const shape = PIECES[type].map(row => [...row]);
   return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
+}
+
+function createBombPiece() {
+  const shape = [[BOMB_TYPE, BOMB_TYPE], [BOMB_TYPE, BOMB_TYPE]];
+  return { type: BOMB_TYPE, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0, isBomb: true };
+}
+
+function createLightningPiece() {
+  const shape = [[LIGHTNING_TYPE]];
+  return { type: LIGHTNING_TYPE, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0, isLightning: true };
+}
+
+function createPowerUpPiece() {
+  return Math.random() < 0.5 ? createBombPiece() : createLightningPiece();
 }
 
 function collide(shape, ox, oy) {
@@ -133,8 +154,30 @@ function clearLines() {
     score += (LINE_SCORES[cleared] || 0) * level;
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+    linesSincePowerUp += cleared;
+    if (linesSincePowerUp >= POWERUP_THRESHOLD) {
+      linesSincePowerUp -= POWERUP_THRESHOLD;
+      next = createPowerUpPiece();
+      drawNext();
+    }
     updateHUD();
   }
+}
+
+function explodeBomb() {
+  const cx = current.x + Math.floor(current.shape[0].length / 2);
+  const cy = current.y + Math.floor(current.shape.length / 2);
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      const nx = cx + dc;
+      const ny = cy + dr;
+      if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) board[ny][nx] = 0;
+    }
+  }
+}
+
+function explodeLightning() {
+  if (current.y >= 0 && current.y < ROWS) board[current.y].fill(0);
 }
 
 function ghostY() {
@@ -161,7 +204,13 @@ function softDrop() {
 }
 
 function lockPiece() {
-  merge();
+  if (current.isBomb) {
+    explodeBomb();
+  } else if (current.isLightning) {
+    explodeLightning();
+  } else {
+    merge();
+  }
   clearLines();
   spawn();
 }
@@ -291,6 +340,7 @@ function init() {
   gameOver = false;
   dropInterval = 1000;
   dropAccum = 0;
+  linesSincePowerUp = 0;
   lastTime = performance.now();
   next = randomPiece();
   spawn();
