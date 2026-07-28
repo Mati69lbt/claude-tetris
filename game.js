@@ -4,16 +4,34 @@ const COLS = 10;
 const ROWS = 20;
 const BLOCK = 30;
 
-const COLORS = [
-  null,
-  '#4dd0e1', // I - cyan
-  '#ffd54f', // O - yellow
-  '#ba68c8', // T - purple
-  '#81c784', // S - green
-  '#e57373', // Z - red
-  '#64b5f6', // J - light blue
-  '#ffb74d', // L - orange
-];
+const THEME_COLORS = {
+  dark: [
+    null,
+    '#4dd0e1', // I - cyan
+    '#ffd54f', // O - yellow
+    '#ba68c8', // T - purple
+    '#81c784', // S - green
+    '#e57373', // Z - red
+    '#64b5f6', // J - light blue
+    '#ffb74d', // L - orange
+  ],
+  light: [
+    null,
+    '#00acc1', // I - cyan
+    '#fbc02d', // O - yellow
+    '#8e24aa', // T - purple
+    '#43a047', // S - green
+    '#e53935', // Z - red
+    '#1e88e5', // J - light blue
+    '#fb8c00', // L - orange
+  ],
+};
+
+const GRID_COLORS = { dark: '#22222e', light: '#d8d8e4' };
+const THEME_STORAGE_KEY = 'tetris-theme';
+
+let COLORS = THEME_COLORS.dark;
+let gridColor = GRID_COLORS.dark;
 
 const PIECES = [
   null,
@@ -39,6 +57,7 @@ const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
+const themeToggleBtn = document.getElementById('theme-toggle');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 
@@ -169,7 +188,7 @@ function drawBlock(context, x, y, colorIndex, size, alpha) {
 }
 
 function drawGrid() {
-  ctx.strokeStyle = '#22222e';
+  ctx.strokeStyle = gridColor;
   ctx.lineWidth = 0.5;
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
@@ -274,6 +293,26 @@ function init() {
   animId = requestAnimationFrame(loop);
 }
 
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  COLORS = THEME_COLORS[theme];
+  gridColor = GRID_COLORS[theme];
+  themeToggleBtn.textContent = theme === 'light' ? '☀️' : '🌙';
+  localStorage.setItem(THEME_STORAGE_KEY, theme);
+  if (board) draw();
+  if (next) drawNext();
+}
+
+function initTheme() {
+  const saved = localStorage.getItem(THEME_STORAGE_KEY);
+  applyTheme(saved === 'light' ? 'light' : 'dark');
+}
+
+themeToggleBtn.addEventListener('click', () => {
+  const nextTheme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  applyTheme(nextTheme);
+});
+
 document.addEventListener('keydown', e => {
   if (e.code === 'KeyP') { togglePause(); return; }
   if (paused || gameOver) return;
@@ -301,4 +340,5 @@ document.addEventListener('keydown', e => {
 
 restartBtn.addEventListener('click', init);
 
+initTheme();
 init();
